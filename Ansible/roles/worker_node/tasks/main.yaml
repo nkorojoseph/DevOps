@@ -1,0 +1,60 @@
+- name: turn off swap
+  shell: |
+          sudo swapoff -a
+          sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+- name: Create containerd config file worker
+  file:
+    path: "/etc/modules-load.d/containerd.conf"
+    state: "touch"
+
+- name: Add conf for containerd worker
+  blockinfile:
+    path: "/etc/modules-load.d/containerd.conf"
+    block: |
+          overlay
+          br_netfilter
+
+- name: modprobe worker
+  shell: |
+          sudo modprobe overlay
+          sudo modprobe br_netfilter
+
+- name: Set system configurations for Kubernetes networking
+  file:
+    path: "/etc/sysctl.d/99-kubernetes-cri.conf"
+    state: "touch"
+
+- name: Add conf for containerd worker
+  blockinfile:
+    path: "/etc/sysctl.d/99-kubernetes-cri.conf"
+    block: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+
+- name: Apply new settings worker
+  command: sudo sysctl --system
+
+- name: install containerd in worker
+  apt: 
+    pkg:
+    - containerd.io
+    state: latest
+    allow_change_held_packages: true
+    force: true
+    update_cache: true
+    
+- name: Restart service containerd, in all cases worker
+  ansible.builtin.service:
+    name: containerd
+    state: restarted
+
+- name: update and install dependencies on worker node
+  shell: |
+          sudo containerd config default | sudo tee /etc/containerd/config.toml
+
+- name: change the systemdcgroup to true on worker
+  shell: |
+          sed -i ' s/\(SystemdCgroup = false\)/\SystemdCgroup = true/g' /etc/containerd/config.toml
+          sudo systemctl restart containerd

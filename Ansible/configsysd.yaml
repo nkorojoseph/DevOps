@@ -1,0 +1,10 @@
+- hosts: master
+  become: true
+  gather_facts: false
+  tasks:
+
+  - name: change the systemdcgroup to true
+    shell: |
+            sed -i ' s/\(SystemdCgroup = false\)/\SystemdCgroup = true/g' /etc/containerd/config.toml
+            sudo systemctl restart containerd
+

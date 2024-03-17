@@ -1,0 +1,43 @@
+---
+
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: update repositories from base
+    tags: always
+    shell: |
+            sudo apt update 
+            sudo apt install -y apt-transport-https curl 
+    changed_when: false
+    when: ansible_distribution == "Ubuntu"
+
+- hosts: all
+  become: true
+  roles:
+    - base
+
+- hosts: master
+  become: true
+  roles:
+    - control_node
+
+- hosts: worker
+  become: true
+  roles:
+    - worker_node
+
+- hosts: master, worker
+  become: true
+  roles: 
+    - k8s
+
+- hosts: master
+  become: true
+  roles: 
+    - kubeadmconf
+
+- hosts: worker
+  become: true
+  roles: 
+    - joinworker

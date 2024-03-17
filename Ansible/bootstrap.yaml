@@ -1,0 +1,28 @@
+---
+- hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+
+  - name: create user josephansible
+    tags: always
+    user:
+      name: josephansible
+      groups: root
+
+  - name: add ssh key for josephansible
+    tags: always
+    authorized_key:
+      user: josephansible
+      key: "ssh-ed25519 yoursshpublickey/D ansible"
+
+  - name: add sudoers file for josephansible
+    copy:
+      src: sudoer_josephansible
+      dest: /etc/sudoers.d/josephansible
+      owner: root
+      group: root
+      mode: 0440
+
+
+

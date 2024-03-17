@@ -1,0 +1,43 @@
+- name: install unzip
+  package:
+    name: unzip
+
+
+- name: install terraform
+  unarchive:
+    src: https://releases.hashicorp.com/terraform/0.12.28/terraform_0.12.28_linux_amd64.zip
+    dest: /usr/local/bin
+    remote_src: yes
+    mode: 0755
+    owner: root
+    group: root
+
+
+- name : make keyrings folder
+  shell: | 
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+
+
+
+#uninstall packages
+
+
+- name: reset kubeadm
+  shell: "kubeadm reset --force"
+
+ 
+    - name: uninstall packages 
+      apt: 
+        pkg:
+        - kubectl
+        - kubeadm
+        - kubelet
+        - kubernetes-cni
+        state: absent
+        allow_change_held_packages: true
+        force: true
+        purge : true
+        autoremove: true

@@ -1,0 +1,66 @@
+- name: reset kubeadm
+  shell: "kubeadm reset --force"
+  ignore_errors: True
+
+- name: intialize kubeadm 
+  shell: |
+          sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+  args:
+    chdir: $HOME
+#    creates: cluster_initialized.txt
+
+- name: create .kube directory
+  become_user: nkorojoseph
+  file:
+    path: $HOME/.kube
+    state: directory
+    mode: 0755 
+
+- name: create .kube directory
+  become_user: josephansible
+  file:
+    path: $HOME/.kube
+    state: directory
+    mode: 0755 
+
+
+- name: copies admin.conf to user's kube config
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/nkorojoseph/.kube/config
+    remote_src: yes
+
+
+- name: copies admin.conf to user's kube config
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/josephansible/.kube/config
+    remote_src: yes
+
+    
+- name: Get the token for joining the worker nodes
+  become: yes
+  become_user: josephansible
+  shell: sudo kubeadm token create --print-join-command
+  register: kubernetes_join_command
+
+- debug: msg="{{ kubernetes_join_command.stdout }}"
+
+- name: Copy join command to local file.
+  become: yes
+  local_action: copy content="{{ kubernetes_join_command.stdout_lines[0] }}" dest="/tmp/kubernetes_join_command" mode=0777
+
+
+- name: install Pod network
+  become_user: josephansible
+  shell: |
+          kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/tigera-operator.yaml
+          curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/custom-resources.yaml -O
+          kubectl create -f custom-resources.yaml
+
+#          kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/tigera-operator.yaml
+#          curl https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml -O
+#          kubectl apply -f calico.yaml
+          
+  args:
+    chdir: $HOME

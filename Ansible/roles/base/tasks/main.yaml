@@ -1,0 +1,4 @@
+- name: add ssh key for josephansible
+  authorized_key:
+    user: josephansible
+    key: "ssh-ed25519 yoursshkeyAWPmJZ/D ansible"
